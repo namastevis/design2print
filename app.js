@@ -18,6 +18,18 @@ fontUploadInput.addEventListener('change', (event) => {
     }
 });
 
+// Helper Function for Date/Time
+function getFormattedTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+}
+
 // Core Generation Function
 async function generateCertificates(isPreviewMode) {
     const status = document.getElementById('status');
@@ -31,7 +43,7 @@ async function generateCertificates(isPreviewMode) {
         return;
     }
 
-    status.innerText = isPreviewMode ? "Generating preview..." : "Processing all certificates...";
+    status.innerText = isPreviewMode ? "Generating full preview... (this may take a moment for large lists)" : "Processing all certificates for download...";
 
     try {
         const pdfBytes = await pdfUpload.arrayBuffer();
@@ -51,13 +63,9 @@ async function generateCertificates(isPreviewMode) {
         // Split names and remove empty lines
         let names = namesText.split('\n').filter(name => name.trim() !== '');
         
-        // If it's just a preview, we only process the very first name on the list
-        if (isPreviewMode) {
-            names = [names[0]]; 
-        }
-        
         const fontSize = 36; 
 
+        // Generate ALL pages, whether preview or final download
         for (const name of names) {
             const cleanName = name.trim();
             const [copiedPage] = await masterPdf.copyPages(templatePdf, [0]);
@@ -70,7 +78,7 @@ async function generateCertificates(isPreviewMode) {
             // DRAW TEXT
             copiedPage.drawText(cleanName, {
                 x: xCoordinate,
-                y: yCoordInput, // Pulled from the new input box!
+                y: yCoordInput, 
                 size: fontSize,
                 font: customFont,
                 color: PDFLib.rgb(0.2, 0.2, 0.2), 
@@ -86,17 +94,18 @@ async function generateCertificates(isPreviewMode) {
         if (isPreviewMode) {
             // Push to the iframe
             document.getElementById('previewFrame').src = blobUrl;
-            status.innerText = "Preview updated! Check alignment on the right.";
+            status.innerText = `Full preview ready! (${names.length} pages generated) Scroll through the PDF on the right.`;
             // Reveal the download button now that they have previewed it
             document.getElementById('downloadBtn').style.display = "block";
         } else {
-            // Trigger actual download
+            // Trigger actual download with dynamic filename
             const mbSize = (finalPdfBytes.byteLength / (1024 * 1024)).toFixed(2);
             status.innerText = `Done! Final size: ${mbSize} MB. Downloading now...`;
             
+            const timestamp = getFormattedTimestamp();
             const link = document.createElement('a');
             link.href = blobUrl;
-            link.download = "Combined_Certificates.pdf";
+            link.download = `certificates_${timestamp}.pdf`;
             link.click();
             URL.revokeObjectURL(link.href);
         }
