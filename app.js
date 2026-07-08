@@ -18,16 +18,25 @@ fontUploadInput.addEventListener('change', (event) => {
     }
 });
 
-// Helper Function for Date/Time
+// Helper Function for Date/Time (Updated Format)
 function getFormattedTimestamp() {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    const month = monthNames[now.getMonth()];
     const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
+
+    let hours = now.getHours();
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+    const ampm = hours >= 12 ? 'pm' : 'am';
+
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+
+    // Formats as MonthDay_Hour-MinuteAMPM (e.g., July08_11-34pm)
+    // Hyphen used instead of colon to prevent Windows OS file save errors
+    return `${month}${day}_${hours}-${minutes}${ampm}`;
 }
 
 // Core Generation Function
@@ -95,7 +104,6 @@ async function generateCertificates(isPreviewMode) {
             // Push to the iframe
             document.getElementById('previewFrame').src = blobUrl;
             status.innerText = `Full preview ready! (${names.length} pages generated) Scroll through the PDF on the right.`;
-            // Reveal the download button now that they have previewed it
             document.getElementById('downloadBtn').style.display = "block";
         } else {
             // Trigger actual download with dynamic filename
