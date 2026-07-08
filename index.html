@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate Generator</title>
+    <!-- Load local dependencies -->
+    <script src="pdf-lib.min.js"></script>
+    <script src="fontkit.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; }
+        label { font-weight: bold; display: block; margin-top: 15px; }
+        textarea { width: 100%; margin-top: 5px; }
+        button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
+        #status { margin-top: 15px; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Certificate Generator</h1>
+
+    <label>1. Upload PDF Template:</label>
+    <input type="file" id="pdfUpload" accept=".pdf">
+
+    <label>2. Upload Custom Font (.ttf or .otf) (Optional):</label>
+    <input type="file" id="fontUpload" accept=".ttf,.otf">
+
+    <label>3. Paste Names (One per line):</label>
+    <textarea id="namesList" rows="10" placeholder="Jane Doe
+John Smith"></textarea>
+
+    <button id="generateBtn">Generate Certificates</button>
+    <p id="status"></p>
+
+    <!-- Load your logic last -->
+    <script src="app.js"></script>
+</body>
+</html>
