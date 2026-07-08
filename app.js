@@ -18,7 +18,7 @@ fontUploadInput.addEventListener('change', (event) => {
     }
 });
 
-// Helper Function for Date/Time (Updated Format)
+// Helper Function for Date/Time
 function getFormattedTimestamp() {
     const now = new Date();
     
@@ -32,11 +32,19 @@ function getFormattedTimestamp() {
     const ampm = hours >= 12 ? 'pm' : 'am';
 
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12; 
 
-    // Formats as MonthDay_Hour-MinuteAMPM (e.g., July08_11-34pm)
-    // Hyphen used instead of colon to prevent Windows OS file save errors
     return `${month}${day}_${hours}-${minutes}${ampm}`;
+}
+
+// Helper Function for Title Case (e.g., aMiT jena -> Amit Jena)
+function formatName(name) {
+    return name
+        .trim()
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 // Core Generation Function
@@ -70,13 +78,15 @@ async function generateCertificates(isPreviewMode) {
         const templatePdf = await PDFLib.PDFDocument.load(pdfBytes);
         
         // Split names and remove empty lines
-        let names = namesText.split('\n').filter(name => name.trim() !== '');
+        let rawNames = namesText.split('\n').filter(name => name.trim() !== '');
         
         const fontSize = 36; 
 
-        // Generate ALL pages, whether preview or final download
-        for (const name of names) {
-            const cleanName = name.trim();
+        // Generate ALL pages
+        for (const rawName of rawNames) {
+            // Apply the new Title Case formatting here
+            const cleanName = formatName(rawName);
+            
             const [copiedPage] = await masterPdf.copyPages(templatePdf, [0]);
 
             // DYNAMIC AUTO-CENTERING (X-Axis)
@@ -101,12 +111,10 @@ async function generateCertificates(isPreviewMode) {
         const blobUrl = URL.createObjectURL(blob);
 
         if (isPreviewMode) {
-            // Push to the iframe
             document.getElementById('previewFrame').src = blobUrl;
-            status.innerText = `Full preview ready! (${names.length} pages generated) Scroll through the PDF on the right.`;
+            status.innerText = `Full preview ready! (${rawNames.length} pages generated) Scroll through the PDF on the right.`;
             document.getElementById('downloadBtn').style.display = "block";
         } else {
-            // Trigger actual download with dynamic filename
             const mbSize = (finalPdfBytes.byteLength / (1024 * 1024)).toFixed(2);
             status.innerText = `Done! Final size: ${mbSize} MB. Downloading now...`;
             
