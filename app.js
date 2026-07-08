@@ -1,8 +1,31 @@
+// Handle Font Uploads to populate the dropdown
+const fontUploadInput = document.getElementById('fontUpload');
+const fontSelect = document.getElementById('fontSelect');
+let uploadedFonts = {}; // Store font files by name
+
+fontUploadInput.addEventListener('change', (event) => {
+    const files = event.target.files;
+    
+    // Clear existing custom options, keep default
+    fontSelect.innerHTML = '<option value="default">Default (Helvetica)</option>';
+    uploadedFonts = {};
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        uploadedFonts[file.name] = file;
+        
+        const option = document.createElement('option');
+        option.value = file.name;
+        option.text = file.name;
+        fontSelect.appendChild(option);
+    }
+});
+
 document.getElementById('generateBtn').addEventListener('click', async () => {
     const status = document.getElementById('status');
     const pdfUpload = document.getElementById('pdfUpload').files[0];
-    const fontUpload = document.getElementById('fontUpload').files[0];
     const namesText = document.getElementById('namesList').value;
+    const selectedFontName = fontSelect.value;
 
     // Basic validation
     if (!pdfUpload || !namesText.trim()) {
@@ -16,19 +39,19 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
         // 1. Read the uploaded PDF into memory
         const pdfBytes = await pdfUpload.arrayBuffer();
 
-        // 2. Initialize the blank master document that the user will eventually download
+        // 2. Initialize the blank master document
         const masterPdf = await PDFLib.PDFDocument.create();
 
         // 3. Register Fontkit (allows custom font parsing)
         masterPdf.registerFontkit(window.fontkit);
 
-        // 4. Handle Font Logic
+        // 4. Handle Font Logic based on selection
         let customFont;
-        if (fontUpload) {
-            const fontBytes = await fontUpload.arrayBuffer();
+        if (selectedFontName !== 'default' && uploadedFonts[selectedFontName]) {
+            const fontBytes = await uploadedFonts[selectedFontName].arrayBuffer();
             customFont = await masterPdf.embedFont(fontBytes);
         } else {
-            // Default fallback if they don't upload a font file
+            // Default fallback
             customFont = await masterPdf.embedFont(PDFLib.StandardFonts.Helvetica);
         }
 
@@ -37,19 +60,31 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
 
         // 6. Process the names
         const names = namesText.split('\n').filter(name => name.trim() !== '');
+        
+        const fontSize = 36; // Adjust this size as needed
 
         for (const name of names) {
-            // Copy the first page of the template for the current name
+            const cleanName = name.trim();
+            // Copy the first page of the template
             const [copiedPage] = await masterPdf.copyPages(templatePdf, [0]);
 
-            // ⚠️ IMPORTANT: You will need to adjust X, Y, and Size for your specific PDF!
-            // In pdf-lib, the Y coordinate starts at 0 from the BOTTOM of the page.
-            copiedPage.drawText(name.trim(), {
-                x: 250,
-                y: 400,
-                size: 32,
+            // Calculate center alignment
+            const textWidth = customFont.widthOfTextAtSize(cleanName, fontSize);
+            const pageWidth = copiedPage.getWidth();
+            
+            // X coordinate to perfectly center the text
+            const xCoordinate = (pageWidth - textWidth) / 2;
+            
+            // ⚠️ IMPORTANT: Y coordinate starts from the BOTTOM of the page.
+            // Adjust this value (e.g., 320) up or down to hit the correct baseline.
+            const yCoordinate = 320; 
+
+            copiedPage.drawText(cleanName, {
+                x: xCoordinate,
+                y: yCoordinate,
+                size: fontSize,
                 font: customFont,
-                color: PDFLib.rgb(0, 0, 0), // Black text
+                color: PDFLib.rgb(0.2, 0.2, 0.2), // Dark grey/black text
             });
 
             // Add the stamped page to the master document
