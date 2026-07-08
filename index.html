@@ -6,38 +6,59 @@
     <script src="pdf-lib.min.js"></script>
     <script src="fontkit.umd.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; }
+        body { font-family: sans-serif; padding: 20px; margin: 0; }
+        h1 { margin-top: 0; }
+        .container { display: flex; gap: 30px; height: 90vh; }
+        .controls { flex: 1; max-width: 400px; display: flex; flex-direction: column; overflow-y: auto; }
+        .preview-pane { flex: 2; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; }
+        
         label { font-weight: bold; display: block; margin-top: 15px; }
-        textarea { width: 100%; margin-top: 5px; }
-        select { margin-top: 5px; width: 100%; padding: 5px; }
-        button { margin-top: 20px; padding: 10px 20px; cursor: pointer; }
+        textarea, select, input[type="number"] { width: 100%; margin-top: 5px; padding: 5px; box-sizing: border-box; }
+        button { margin-top: 15px; padding: 10px; cursor: pointer; font-weight: bold; }
+        .primary-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; }
+        .success-btn { background-color: #28a745; color: white; border: none; border-radius: 4px; display: none; }
+        
         #status { margin-top: 15px; font-weight: bold; color: #333; }
-        .hint { font-size: 0.9em; color: #555; font-weight: normal; }
+        .hint { font-size: 0.85em; color: #555; font-weight: normal; }
+        
+        iframe { width: 100%; height: 100%; border: none; border-radius: 8px; }
     </style>
 </head>
 <body>
-    <h1>Certificate Generator</h1>
+    <div class="container">
+        <div class="controls">
+            <h1>Certificate Generator</h1>
 
-    <label>1. Upload PDF Template:
-        <br><span class="hint">(Must be exported from Illustrator with the name field completely BLANK)</span>
-    </label>
-    <input type="file" id="pdfUpload" accept=".pdf">
+            <label>1. Upload PDF Template:</label>
+            <input type="file" id="pdfUpload" accept=".pdf">
 
-    <label>2. Upload Custom Fonts (.ttf or .otf):
-        <br><span class="hint">(You can upload multiple files)</span>
-    </label>
-    <input type="file" id="fontUpload" accept=".ttf,.otf" multiple>
+            <label>2. Upload Custom Fonts (.ttf or .otf):</label>
+            <input type="file" id="fontUpload" accept=".ttf,.otf" multiple>
 
-    <label>3. Select Font to Use:</label>
-    <select id="fontSelect">
-        <option value="default">Default (Helvetica)</option>
-    </select>
+            <label>3. Select Font:</label>
+            <select id="fontSelect">
+                <option value="default">Default (Helvetica)</option>
+            </select>
 
-    <label>4. Paste Names (One per line):</label>
-    <textarea id="namesList" rows="10" placeholder="Jane Doe&#10;John Smith"></textarea>
+            <label>4. Paste Names (One per line):</label>
+            <textarea id="namesList" rows="6" placeholder="Jane Doe&#10;John Smith"></textarea>
 
-    <button id="generateBtn">Generate Certificates</button>
-    <p id="status"></p>
+            <label>5. Adjust Vertical Position (Y-Axis):
+                <br><span class="hint">Higher number moves text UP. Default is 550.</span>
+            </label>
+            <input type="number" id="yCoordinate" value="550" step="10">
+
+            <button id="previewBtn" class="primary-btn">Generate Preview</button>
+            
+            <p id="status"></p>
+
+            <button id="downloadBtn" class="success-btn">Looks Good! Download All</button>
+        </div>
+
+        <div class="preview-pane">
+            <iframe id="previewFrame" title="PDF Preview"></iframe>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
