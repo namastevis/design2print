@@ -1,4 +1,3 @@
-
 // Handle Font Uploads
 const fontUploadInput = document.getElementById('fontUpload');
 const fontSelect = document.getElementById('fontSelect');
