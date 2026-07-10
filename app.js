@@ -53,6 +53,10 @@ async function generateCertificates(isPreviewMode) {
     const pdfUpload = document.getElementById('pdfUpload').files[0];
     const namesText = document.getElementById('namesList').value;
     const selectedFontName = fontSelect.value;
+    
+    // Grab the new layout values from the user interface
+    const fontSizeInput = parseInt(document.getElementById('fontSizeInput').value, 10);
+    const xCenterInput = parseInt(document.getElementById('xCoordinate').value, 10);
     const yCoordInput = parseInt(document.getElementById('yCoordinate').value, 10);
 
     if (!pdfUpload || !namesText.trim()) {
@@ -79,26 +83,25 @@ async function generateCertificates(isPreviewMode) {
         
         // Split names and remove empty lines
         let rawNames = namesText.split('\n').filter(name => name.trim() !== '');
-        
-        const fontSize = 36; 
 
         // Generate ALL pages
         for (const rawName of rawNames) {
-            // Apply the new Title Case formatting here
             const cleanName = formatName(rawName);
-            
             const [copiedPage] = await masterPdf.copyPages(templatePdf, [0]);
 
-            // DYNAMIC AUTO-CENTERING (X-Axis)
-            const textWidth = customFont.widthOfTextAtSize(cleanName, fontSize);
-            const pageWidth = copiedPage.getWidth();
-            const xCoordinate = (pageWidth - textWidth) / 2;
+            // DYNAMIC CENTER-ANCHORING 
+            // 1. Measure how wide this specific name is at the chosen font size
+            const textWidth = customFont.widthOfTextAtSize(cleanName, fontSizeInput);
+            
+            // 2. Take the user's desired center point (X) and subtract half the text width 
+            // to find the exact starting coordinate for the left edge of the text.
+            const calculatedLeftEdge = xCenterInput - (textWidth / 2);
 
             // DRAW TEXT
             copiedPage.drawText(cleanName, {
-                x: xCoordinate,
+                x: calculatedLeftEdge,
                 y: yCoordInput, 
-                size: fontSize,
+                size: fontSizeInput,
                 font: customFont,
                 color: PDFLib.rgb(0.2, 0.2, 0.2), 
             });
