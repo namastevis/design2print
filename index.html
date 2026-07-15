@@ -152,6 +152,21 @@
   .btn.sm{padding:8px 12px; font-size:12.5px; font-weight:600}
   .progress{font-family:var(--mono); font-size:12px; color:var(--blue-deep)}
   .spacer{flex:1}
+  .foot{text-align:center; font-family:var(--mono); font-size:11px; color:var(--ink-soft);
+    margin-top:28px; letter-spacing:.03em}
+  .foot a{color:var(--blue-deep); text-decoration:none}
+  .foot a:hover{text-decoration:underline}
+
+  /* how-it-works overlay */
+  .modal{position:fixed; inset:0; background:rgba(20,23,29,.55); display:none;
+    align-items:flex-start; justify-content:center; padding:30px 16px; z-index:50; overflow:auto}
+  .modal.open{display:flex}
+  .modal .box{background:var(--paper); border:1px solid var(--line-strong); border-top:3px solid var(--ink);
+    border-radius:2px; max-width:1080px; width:100%; position:relative; padding:14px}
+  .modal .box img{display:block; width:100%; height:auto}
+  .modal .close{position:absolute; top:10px; right:10px; border:1px solid var(--line-strong);
+    background:#fff; border-radius:2px; width:30px; height:30px; cursor:pointer; font-size:14px; line-height:1}
+  .modal .close:hover{border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -159,6 +174,7 @@
   <div class="mast">
     <h1>Certificate <span class="mk">Press</span></h1>
     <div class="actions">
+      <button class="btn ghost sm" id="howBtn">How it works</button>
       <button class="btn ghost sm" id="saveProj">Save project</button>
       <button class="btn ghost sm" id="openProj">Open project</button>
       <input type="file" id="projInput" accept=".json,application/json" hidden>
@@ -303,6 +319,7 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
           <span class="ic">⌷</span>
           Load your design PDF to begin —<br>or explore with a working example.<br>
           <button class="btn ghost sm" id="sampleBtn">Load sample project</button>
+          <button class="btn ghost sm" id="howBtn2">See how it works</button>
         </div>
         <div class="sheet" id="sheet" style="display:none">
           <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
@@ -321,6 +338,15 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
     <button class="btn ghost" id="pngBtn" disabled>PNGs (ZIP)</button>
     <button class="btn ghost" id="zipBtn" disabled>Individual PDFs (ZIP)</button>
     <button class="btn primary" id="genBtn" disabled>Download one PDF</button>
+  </div>
+
+  <div class="foot">Made with ❤️ in India · works even when the WiFi doesn’t · <a href="LICENSE" target="_blank" rel="noopener">MIT licensed</a></div>
+</div>
+
+<div class="modal" id="howModal" role="dialog" aria-label="How Certificate Press works">
+  <div class="box">
+    <button class="close" id="howClose" aria-label="close">✕</button>
+    <img src="flow.svg" alt="How it works: 1 load your artwork PDF, 2 paste people and details from a spreadsheet, 3 add fields and drag them into place, 4 proof every row, 5 export as one merged PDF, a ZIP of individual PDFs, or a ZIP of PNG images. Along the way: upload your own fonts, badge grid layout with crop marks and serial numbers, and save the whole project to one file. Everything stays in your browser.">
   </div>
 </div>
 
@@ -1006,6 +1032,15 @@ async function loadSample(){
     ],
   });
 }
+
+/* ---------------- how-it-works modal ---------------- */
+function openHow(){ $("#howModal").classList.add("open"); }
+function closeHow(){ $("#howModal").classList.remove("open"); }
+$("#howBtn").onclick=openHow;
+$("#howBtn2").onclick=openHow;
+$("#howClose").onclick=closeHow;
+$("#howModal").addEventListener("click",e=>{ if(e.target===$("#howModal")) closeHow(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeHow(); });
 
 /* ---------------- readiness ---------------- */
 function refreshAll(){

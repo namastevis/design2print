@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 640" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1857C4"/>
+    </marker>
+  </defs>
+
+  <!-- canvas -->
+  <rect x="0" y="0" width="1060" height="640" fill="#F1F2EE"/>
+  <text x="40" y="52" font-size="24" font-weight="800" fill="#14171D" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">Certificate <tspan fill="#1857C4">Press</tspan> — how it works</text>
+  <text x="40" y="76" font-size="12" fill="#5B616C" letter-spacing="1">ONE DESIGN &#215; MANY NAMES &#8594; PRINT-READY FILES · EVERYTHING STAYS IN YOUR BROWSER</text>
+
+  <!-- ============ STEP 1 ============ -->
+  <g>
+    <rect x="40" y="110" width="220" height="150" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <rect x="40" y="110" width="220" height="34" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <rect x="52" y="118" width="19" height="19" fill="#14171D" rx="2"/>
+    <text x="61.5" y="132" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+    <text x="80" y="132" font-size="13" font-weight="700" fill="#14171D" font-family="system-ui,sans-serif">Artwork</text>
+    <!-- mini certificate -->
+    <rect x="66" y="158" width="76" height="54" fill="#FDFBF5" stroke="#1A2A4F" stroke-width="1.6"/>
+    <rect x="71" y="163" width="66" height="44" fill="none" stroke="#C8A349" stroke-width="0.8"/>
+    <line x1="80" y1="176" x2="128" y2="176" stroke="#1A2A4F" stroke-width="2"/>
+    <line x1="86" y1="190" x2="122" y2="190" stroke="#C8A349" stroke-width="1" stroke-dasharray="3 2"/>
+    <text x="104" y="201" font-size="7" fill="#5B616C" text-anchor="middle">(leave name blank)</text>
+    <text x="160" y="176" font-size="11" fill="#14171D" font-family="system-ui,sans-serif">Drop your</text>
+    <text x="160" y="191" font-size="11" fill="#14171D" font-family="system-ui,sans-serif">design as PDF</text>
+    <text x="160" y="208" font-size="9.5" fill="#5B616C" font-family="system-ui,sans-serif">.ai / Canva / Figma</text>
+    <text x="160" y="221" font-size="9.5" fill="#5B616C" font-family="system-ui,sans-serif">&#8594; export as PDF</text>
+    <text x="66" y="243" font-size="9.5" fill="#5B616C">any size · A4 &#8594; A3 override</text>
+  </g>
+
+  <!-- ============ STEP 2 ============ -->
+  <g>
+    <rect x="310" y="110" width="220" height="150" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <rect x="322" y="118" width="19" height="19" fill="#14171D" rx="2"/>
+    <text x="331.5" y="132" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+    <text x="350" y="132" font-size="13" font-weight="700" fill="#14171D" font-family="system-ui,sans-serif">People &amp; details</text>
+    <!-- mini spreadsheet -->
+    <g font-size="8.5">
+      <rect x="330" y="152" width="180" height="16" fill="#EAF0FB" stroke="#DCDED7"/>
+      <text x="338" y="163" fill="#0E3A8C" font-weight="700">Name</text>
+      <text x="404" y="163" fill="#0E3A8C" font-weight="700">Workshop</text>
+      <text x="472" y="163" fill="#0E3A8C" font-weight="700">Date</text>
+      <rect x="330" y="168" width="180" height="16" fill="#FFFFFF" stroke="#DCDED7"/>
+      <text x="338" y="179" fill="#14171D">Priya S.</text><text x="404" y="179" fill="#14171D">Data</text><text x="472" y="179" fill="#14171D">18 Jul</text>
+      <rect x="330" y="184" width="180" height="16" fill="#FFFFFF" stroke="#DCDED7"/>
+      <text x="338" y="195" fill="#14171D">Rahul V.</text><text x="404" y="195" fill="#14171D">Proto</text><text x="472" y="195" fill="#14171D">18 Jul</text>
+      <rect x="330" y="200" width="180" height="16" fill="#FFFFFF" stroke="#DCDED7"/>
+      <text x="338" y="211" fill="#14171D">Wei C.</text><text x="404" y="211" fill="#14171D">Data</text><text x="472" y="211" fill="#14171D">18 Jul</text>
+    </g>
+    <text x="330" y="236" font-size="10" fill="#14171D" font-family="system-ui,sans-serif">Paste straight from a sheet</text>
+    <text x="330" y="249" font-size="9.5" fill="#5B616C">one line per person · extra columns OK</text>
+  </g>
+
+  <!-- ============ STEP 3 ============ -->
+  <g>
+    <rect x="580" y="110" width="220" height="150" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <rect x="592" y="118" width="19" height="19" fill="#14171D" rx="2"/>
+    <text x="601.5" y="132" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+    <text x="620" y="132" font-size="13" font-weight="700" fill="#14171D" font-family="system-ui,sans-serif">Place the fields</text>
+    <!-- mini cert with draggable field -->
+    <rect x="606" y="152" width="110" height="72" fill="#FDFBF5" stroke="#1A2A4F" stroke-width="1.4"/>
+    <rect x="622" y="176" width="78" height="16" fill="none" stroke="#1857C4" stroke-width="1" stroke-dasharray="3 2"/>
+    <text x="661" y="188" font-size="9" fill="#1A2A4F" font-weight="700" text-anchor="middle" font-family="system-ui,sans-serif">Priya Sharma</text>
+    <!-- anchor cross -->
+    <line x1="661" y1="170" x2="661" y2="198" stroke="#1857C4" stroke-width="1"/>
+    <line x1="647" y1="184" x2="675" y2="184" stroke="#1857C4" stroke-width="1"/>
+    <!-- cursor -->
+    <path d="M700 200 l0 12 l3.4-3 l2.3 5 l2.6-1.2 l-2.3-5 l4.6-0.4 z" fill="#14171D"/>
+    <text x="726" y="165" font-size="9.5" fill="#14171D" font-family="system-ui,sans-serif">Add a field per</text>
+    <text x="726" y="178" font-size="9.5" fill="#14171D" font-family="system-ui,sans-serif">column, drag it</text>
+    <text x="726" y="191" font-size="9.5" fill="#14171D" font-family="system-ui,sans-serif">into place</text>
+    <text x="606" y="240" font-size="9.5" fill="#5B616C">font · size · colour · align</text>
+    <text x="606" y="252" font-size="9.5" fill="#5B616C">one placement &#8594; every page</text>
+  </g>
+
+  <!-- ============ STEP 4 (proof) ============ -->
+  <g>
+    <rect x="850" y="110" width="170" height="150" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <rect x="862" y="118" width="19" height="19" fill="#14171D" rx="2"/>
+    <text x="871.5" y="132" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
+    <text x="890" y="132" font-size="13" font-weight="700" fill="#14171D" font-family="system-ui,sans-serif">Proof it</text>
+    <text x="866" y="162" font-size="12" fill="#14171D">&#8249; row 7 / 40 &#8250;</text>
+    <text x="866" y="182" font-size="9.5" fill="#5B616C">flip with arrow keys</text>
+    <text x="866" y="195" font-size="9.5" fill="#5B616C">jump to longest name</text>
+    <rect x="862" y="206" width="146" height="30" fill="#FDF1E7" stroke="#F0D3BA"/>
+    <text x="870" y="219" font-size="8.5" fill="#8A3A10">! 2 rows shrink to fit</text>
+    <text x="870" y="230" font-size="8.5" fill="#8A3A10">(#12, #31) — check them</text>
+  </g>
+
+  <!-- arrows between steps -->
+  <line x1="262" y1="185" x2="306" y2="185" stroke="#1857C4" stroke-width="1.8" marker-end="url(#arr)"/>
+  <line x1="532" y1="185" x2="576" y2="185" stroke="#1857C4" stroke-width="1.8" marker-end="url(#arr)"/>
+  <line x1="802" y1="185" x2="846" y2="185" stroke="#1857C4" stroke-width="1.8" marker-end="url(#arr)"/>
+
+  <!-- ============ EXPORT fan ============ -->
+  <line x1="935" y1="262" x2="935" y2="292" stroke="#1857C4" stroke-width="1.8" marker-end="url(#arr)"/>
+  <rect x="877" y="296" width="116" height="30" fill="#1857C4" rx="2"/>
+  <text x="935" y="316" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle" font-family="system-ui,sans-serif">5 · Export</text>
+
+  <line x1="877" y1="311" x2="700" y2="311" stroke="#1857C4" stroke-width="1.4"/>
+  <line x1="700" y1="311" x2="700" y2="356" stroke="#1857C4" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="935" y1="326" x2="935" y2="356" stroke="#1857C4" stroke-width="1.4" marker-end="url(#arr)"/>
+1857C4" stroke-width="1.4"/>
+#1857C4" stroke-width="1.4"/>
+
+  <!-- export cards -->
+  <g font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+    <rect x="620" y="360" width="160" height="84" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <text x="636" y="384" font-size="12" font-weight="700" fill="#14171D">One merged PDF</text>
+    <text x="636" y="401" font-size="10" fill="#5B616C">one page per person</text>
+    <text x="636" y="415" font-size="10" fill="#5B616C">&#8594; straight to the printer</text>
+    <text x="636" y="432" font-size="9" fill="#0E3A8C" font-family="ui-monospace,Menlo,monospace">certificates.pdf</text>
+
+    <rect x="855" y="360" width="160" height="84" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <text x="871" y="384" font-size="12" font-weight="700" fill="#14171D">ZIP of PDFs</text>
+    <text x="871" y="401" font-size="10" fill="#5B616C">one file per person</text>
+    <text x="871" y="415" font-size="10" fill="#5B616C">&#8594; email / distribute</text>
+    <text x="871" y="432" font-size="9" fill="#0E3A8C" font-family="ui-monospace,Menlo,monospace">Priya_Sharma.pdf &#8230;</text>
+
+    <rect x="620" y="458" width="160" height="84" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <line x1="700" y1="444" x2="700" y2="454" stroke="#1857C4" stroke-width="1.4" marker-end="url(#arr)"/>
+    <text x="636" y="482" font-size="12" font-weight="700" fill="#14171D">ZIP of PNGs</text>
+    <text x="636" y="499" font-size="10" fill="#5B616C">image per person</text>
+    <text x="636" y="513" font-size="10" fill="#5B616C">&#8594; WhatsApp / LinkedIn</text>
+    <text x="636" y="530" font-size="9" fill="#0E3A8C" font-family="ui-monospace,Menlo,monospace">Priya_Sharma.png &#8230;</text>
+  </g>
+
+  <!-- ============ side rail: extras ============ -->
+  <g font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+    <text x="40" y="318" font-size="11" fill="#5B616C" font-family="ui-monospace,Menlo,monospace" letter-spacing="2">ALONG THE WAY</text>
+
+    <rect x="40" y="332" width="250" height="62" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <text x="56" y="356" font-size="12" font-weight="700" fill="#14171D">Your fonts</text>
+    <text x="56" y="372" font-size="10" fill="#5B616C">upload .ttf / .otf — or use the built-ins</text>
+    <text x="56" y="385" font-size="10" fill="#5B616C">(Helvetica · Times · Courier)</text>
+
+    <rect x="40" y="406" width="250" height="88" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <text x="56" y="430" font-size="12" font-weight="700" fill="#14171D">Badge mode</text>
+    <!-- mini imposed sheet -->
+    <rect x="216" y="418" width="52" height="66" fill="#FDFBF5" stroke="#C4C7BE"/>
+    <g fill="#FFFFFF" stroke="#1A2A4F" stroke-width="0.9">
+      <rect x="221" y="424" width="19" height="12"/><rect x="245" y="424" width="19" height="12"/>
+      <rect x="221" y="441" width="19" height="12"/><rect x="245" y="441" width="19" height="12"/>
+      <rect x="221" y="458" width="19" height="12"/><rect x="245" y="458" width="19" height="12"/>
+    </g>
+    <text x="56" y="446" font-size="10" fill="#5B616C">grid of badges / place cards per sheet</text>
+    <text x="56" y="459" font-size="10" fill="#5B616C">with crop marks for cutting</text>
+    <text x="56" y="478" font-size="10" fill="#5B616C">+ serial numbers: CIID-001, 002&#8230;</text>
+
+    <rect x="40" y="506" width="250" height="62" fill="#FFFFFF" stroke="#DCDED7" rx="2"/>
+    <text x="56" y="530" font-size="12" font-weight="700" fill="#14171D">Save the project</text>
+    <text x="56" y="546" font-size="10" fill="#5B616C">artwork + fonts + data + placements in</text>
+    <text x="56" y="559" font-size="10" fill="#5B616C">one file — reopen for the next event</text>
+  </g>
+
+  <!-- privacy strip -->
+  <rect x="330" y="580" width="690" height="34" fill="#EAF0FB" stroke="#CFE0FB" rx="2"/>
+  <text x="675" y="602" font-size="11" fill="#0E3A8C" text-anchor="middle" font-family="ui-monospace,Menlo,monospace">NO UPLOADS · NO ACCOUNTS · NO SERVERS — NAMES NEVER LEAVE YOUR MACHINE</text>
+  <text x="40" y="602" font-size="11" fill="#5B616C" font-family="ui-monospace,Menlo,monospace">Made with &#10084; in India</text>
+</svg>
