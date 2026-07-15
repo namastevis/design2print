@@ -1,4 +1,4 @@
-# Certificate Press v2
+# Certificate Press v3
 
 A one-page web app that puts names — and any other changing details — onto your
 own design, and outputs print-ready PDFs. Runs **entirely in the visitor's
@@ -17,8 +17,14 @@ vendored in `vendor/`), so it has zero external dependencies and works offline.
   colour, left/centre/right alignment, and an auto-shrink limit for long values.
 - **Real proofing** — page through every row on the preview, jump to the
   longest entry, and get warned about rows that shrink noticeably.
-- **Two exports** — one merged PDF (for the printer) or a ZIP of individual
-  per-person PDFs (for emailing/distribution), named from the first field.
+- **Grid imposition (badges & place cards)** — lay out multiple pieces per
+  sheet (choose sheet size, columns, rows, margins, gap) with crop marks for
+  cutting. The piece count and sheet count update live.
+- **Serial numbers** — any field can be an auto-numbered serial (001, 002…)
+  with an optional prefix, no data column needed.
+- **Three exports** — one merged PDF (for the printer), a ZIP of individual
+  per-person PDFs (for distribution), or a ZIP of PNG images (for
+  WhatsApp/LinkedIn sharing), all named from the first field.
 - **Projects** — save everything (artwork, fonts, data, placements) to a single
   JSON file and reopen it next event.
 - **Sample project** — one click loads a working demo to explore.

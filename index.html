@@ -120,13 +120,21 @@
   .reg.bl{left:-26px; bottom:-26px}.reg.br{right:-26px; bottom:-26px}
 
   .fEl{position:absolute; white-space:nowrap; line-height:1; cursor:grab; user-select:none;
-    padding:1px 2px; outline:1px dashed transparent; touch-action:none}
-  .fEl:hover{outline-color:rgba(24,87,196,.5)}
+    padding:1px 2px; outline:1px dashed rgba(24,87,196,.35); touch-action:none}
+  .fEl:hover{outline-color:rgba(24,87,196,.7)}
   .fEl.sel{outline:1.5px dashed var(--blue)}
   .fEl.drag{cursor:grabbing}
   .fEl .tagLbl{position:absolute; top:-16px; left:0; font:700 9px var(--mono); letter-spacing:.08em;
-    color:#fff; background:var(--blue); border-radius:2px; padding:1px 5px; display:none; text-transform:uppercase}
+    color:#fff; background:var(--blue); border-radius:2px; padding:1px 5px; display:none; text-transform:uppercase; white-space:nowrap}
   .fEl.sel .tagLbl{display:block}
+  /* fixed anchor marker — identical position on every certificate */
+  .anch{position:absolute; width:13px; height:13px; pointer-events:none; z-index:3}
+  .anch::before,.anch::after{content:""; position:absolute; background:var(--blue)}
+  .anch::before{left:50%; top:0; width:1.5px; height:100%; transform:translateX(-50%)}
+  .anch::after{top:50%; left:0; height:1.5px; width:100%; transform:translateY(-50%)}
+  .layerHint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none; font:12px var(--mono); color:var(--ink-soft); text-align:center;
+    background:rgba(255,255,255,.55); line-height:1.8}
 
   .warnline{margin-top:10px}
 
@@ -191,6 +199,33 @@
               <div><label class="fld">Height mm</label><input type="number" id="ch" min="10" step="1"></div>
             </div>
           </div>
+          <div id="layoutBlock" style="display:none; margin-top:12px">
+            <label class="fld">Layout</label>
+            <div class="seg" id="layoutSeg">
+              <button data-l="single" aria-pressed="true">One per page</button>
+              <button data-l="grid">Grid per sheet · badges</button>
+            </div>
+            <div id="gridOpts" style="display:none; margin-top:10px">
+              <div class="row">
+                <div style="flex:1.7"><label class="fld">Sheet</label>
+                  <select id="gSheet">
+                    <option value="a4p">A4 portrait</option><option value="a4l">A4 landscape</option>
+                    <option value="a3p">A3 portrait</option><option value="a3l">A3 landscape</option>
+                    <option value="ltrp">Letter portrait</option>
+                  </select></div>
+                <div><label class="fld">Cols</label><input type="number" id="gCols" min="1" max="10" value="2"></div>
+                <div><label class="fld">Rows</label><input type="number" id="gRows" min="1" max="12" value="4"></div>
+              </div>
+              <div class="row" style="margin-top:8px">
+                <div><label class="fld">Margin mm</label><input type="number" id="gMargin" min="0" value="10"></div>
+                <div><label class="fld">Gap mm</label><input type="number" id="gGap" min="0" value="6"></div>
+                <div style="flex:1.3; display:flex; align-items:flex-end; padding-bottom:8px">
+                  <label style="display:flex; gap:6px; align-items:center; font-size:13px">
+                    <input type="checkbox" id="gCrop" checked style="accent-color:var(--blue)"> Crop marks</label></div>
+              </div>
+              <div class="hint" id="gridNote"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -213,7 +248,7 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
 
       <!-- STEP 3 -->
       <div class="panel" id="p3">
-        <div class="head"><span class="step">3</span><h2>Fields on the design</h2><span class="note">click a field, drag it on the proof →</span></div>
+        <div class="head"><span class="step">3</span><h2>Fields on the design</h2><span class="note">drag the outlined text on the preview →<br>one placement applies to every page</span></div>
         <div class="body">
           <div class="chips" id="chips"></div>
 
@@ -225,6 +260,10 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
                   <button data-a="left">Left</button><button data-a="center" aria-pressed="true">Centre</button><button data-a="right">Right</button>
                 </div>
               </div>
+            </div>
+            <div class="row" id="serialRow" style="display:none; margin-top:10px">
+              <div><label class="fld">Serial prefix — optional, e.g. CIID-</label>
+                <input type="text" id="fPrefix" placeholder="leave empty for plain 001, 002…"></div>
             </div>
             <div class="row" style="margin-top:10px">
               <div style="flex:1.4"><label class="fld">Font</label><select id="fFont"></select></div>
@@ -276,10 +315,11 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
   </div>
 
   <div class="bar">
-    <div class="count"><b id="barCount">0</b> personalised pages ready</div>
+    <div class="count" id="countBox"><b id="barCount">0</b> personalised pages ready</div>
     <span class="progress" id="progress"></span>
     <div class="spacer"></div>
-    <button class="btn ghost" id="zipBtn" disabled>Download ZIP of individual PDFs</button>
+    <button class="btn ghost" id="pngBtn" disabled>PNGs (ZIP)</button>
+    <button class="btn ghost" id="zipBtn" disabled>Individual PDFs (ZIP)</button>
     <button class="btn primary" id="genBtn" disabled>Download one PDF</button>
   </div>
 </div>
@@ -305,8 +345,9 @@ const state = {
   cssScale:1, cssW:0, cssH:0,
   dataRaw:"", hasHeader:false, rows:[], headers:null, nCols:0,
   fonts:[...BUILTIN_FONTS],        // pool; uploaded fonts appended
-  fields:[],                        // {id,label,col,fontId,weight,sizePt,color,align,fitFrac,xFrac,yFrac}
+  fields:[],                        // {id,label,col,fontId,weight,sizePt,color,align,fitFrac,xFrac,yFrac,serialPrefix}
   selField:null, previewRow:0,
+  layout:{mode:"single", sheet:"a4p", cols:2, rows:4, marginMm:10, gapMm:6, crop:true},
 };
 let fieldSeq = 1;
 
@@ -350,7 +391,8 @@ async function loadTemplateBytes(bytes, name){
   $("#p1").classList.add("done"); $("#p1note").textContent="loaded";
   $("#tplChip").innerHTML=`<div class="filechip"><b>PDF</b> ${escapeHtml(name)}${state.tpl.pageCount>1?" · page 1 of "+state.tpl.pageCount+" used":""}<button class="x" title="remove">✕</button></div>`;
   $("#tplChip").querySelector(".x").onclick=clearTemplate;
-  $("#sizeBlock").style.display="block";
+  $("#sizeBlock").style.display = state.layout.mode==="grid" ? "none" : "block";
+  $("#layoutBlock").style.display="block";
   refreshAll();
 }
 function tplError(msg){ $("#tplChip").innerHTML=`<div class="callout err">${escapeHtml(msg)}</div>`; }
@@ -400,6 +442,44 @@ function updateSizeReadout(){
   $("#sizeFinal").textContent=`output ${(ow/PT_PER_MM).toFixed(0)}×${(oh/PT_PER_MM).toFixed(0)} mm`;
 }
 
+/* ---- layout: one-per-page vs grid imposition ---- */
+const SHEETS={a4p:[210,297],a4l:[297,210],a3p:[297,420],a3l:[420,297],ltrp:[215.9,279.4]};
+function sheetSizePt(){ const [w,h]=SHEETS[state.layout.sheet]||SHEETS.a4p; return [w*PT_PER_MM,h*PT_PER_MM]; }
+function gridGeom(){
+  const L=state.layout, [SW,SH]=sheetSizePt();
+  const M=L.marginMm*PT_PER_MM, G=L.gapMm*PT_PER_MM;
+  const cols=Math.max(1,L.cols|0), rows=Math.max(1,L.rows|0);
+  const cellW=(SW-2*M-(cols-1)*G)/cols, cellH=(SH-2*M-(rows-1)*G)/rows;
+  const s=Math.min(cellW/state.tpl.wpt, cellH/state.tpl.hpt);
+  return {SW,SH,M,G,cols,rows,cellW,cellH,scale:s,pw:state.tpl.wpt*s,ph:state.tpl.hpt*s,perSheet:cols*rows,valid:cellW>0&&cellH>0&&s>0};
+}
+$("#layoutSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  [...$("#layoutSeg").children].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  state.layout.mode=b.dataset.l;
+  $("#gridOpts").style.display=state.layout.mode==="grid"?"block":"none";
+  $("#sizeBlock").style.display=state.layout.mode==="grid"?"none":"block";
+  refreshAll();
+});
+["gSheet","gCols","gRows","gMargin","gGap","gCrop"].forEach(id=>{
+  $("#"+id).addEventListener("input",()=>{
+    state.layout.sheet=$("#gSheet").value;
+    state.layout.cols=+$("#gCols").value||1; state.layout.rows=+$("#gRows").value||1;
+    state.layout.marginMm=+$("#gMargin").value||0; state.layout.gapMm=+$("#gGap").value||0;
+    state.layout.crop=$("#gCrop").checked;
+    refreshAll();
+  });
+});
+function updateGridNote(){
+  if(state.layout.mode!=="grid"||!state.tpl.bytes){ $("#gridNote").textContent=""; return; }
+  const g=gridGeom();
+  if(!g.valid){ $("#gridNote").textContent="Grid doesn't fit — reduce cols/rows or margins."; return; }
+  const n=state.rows.length, sheets=n?Math.ceil(n/g.perSheet):0;
+  $("#gridNote").textContent=
+    `${g.cols}×${g.rows} = ${g.perSheet} pieces per sheet · each piece ${(g.pw/PT_PER_MM).toFixed(0)}×${(g.ph/PT_PER_MM).toFixed(0)} mm`
+    +(n?` · ${n} pieces → ${sheets} sheet${sheets!==1?"s":""}`:"");
+}
+
 /* ---------------- STEP 2: data ---------------- */
 $("#data").oninput=()=>{ state.dataRaw=$("#data").value; parseData(); refreshAll(); };
 $("#hasHeader").onchange=()=>{ state.hasHeader=$("#hasHeader").checked; parseData(); refreshAll(); };
@@ -424,7 +504,6 @@ function parseData(){
   state.nCols=rows.reduce((m,r)=>Math.max(m,r.length), state.headers?state.headers.length:0);
   state.previewRow=Math.min(state.previewRow, Math.max(0,rows.length-1));
   $("#dataNote").textContent=rows.length+" rows";
-  $("#barCount").textContent=rows.length;
   $("#colNote").textContent=state.nCols?`${state.nCols} column${state.nCols>1?"s":""} detected`:"";
   $("#p2").classList.toggle("done", rows.length>0);
   refreshFieldEditor(); renderFieldLayer(); updateRowNav(); updateWarnings();
@@ -471,11 +550,14 @@ function refreshFieldEditor(){
   $("#noFieldHint").style.display=f?"none":"block";
   ed.style.display=f?"block":"none";
   if(!f) return;
-  // column select
+  // column select (+ serial number pseudo-column)
   const sel=$("#fCol"); sel.innerHTML="";
   const n=Math.max(state.nCols,1);
   for(let i=0;i<n;i++){ const o=document.createElement("option"); o.value=i; o.textContent=colName(i); sel.appendChild(o); }
-  sel.value=Math.min(f.col,n-1);
+  const so=document.createElement("option"); so.value="serial"; so.textContent="Serial number · 001, 002…"; sel.appendChild(so);
+  sel.value = f.col==="serial" ? "serial" : Math.min(f.col,n-1);
+  $("#serialRow").style.display = f.col==="serial" ? "flex" : "none";
+  $("#fPrefix").value = f.serialPrefix||"";
   // font select
   const fs=$("#fFont"); fs.innerHTML="";
   state.fonts.forEach(ft=>{ const o=document.createElement("option"); o.value=ft.id; o.textContent=ft.label; fs.appendChild(o); });
@@ -490,12 +572,22 @@ function refreshFieldEditor(){
 }
 
 $("#fCol").onchange=e=>{ const f=curField(); if(!f) return;
-  f.col=+e.target.value; f.label=colName(f.col);
-  renderChips(); renderFieldLayer(); updateWarnings(); };
+  const v=e.target.value;
+  if(v==="serial"){ f.col="serial"; f.label="Serial"; }
+  else { f.col=+v; f.label=colName(f.col); }
+  refreshFieldEditor(); renderChips(); renderFieldLayer(); updateWarnings(); };
+$("#fPrefix").oninput=e=>{ const f=curField(); if(!f) return;
+  f.serialPrefix=e.target.value; renderFieldLayer(); updateWarnings(); };
 $("#fFont").onchange=e=>{ const f=curField(); if(!f) return;
   f.fontId=e.target.value; refreshFieldEditor(); renderFieldLayer(); updateWarnings(); };
 $("#alignSeg").addEventListener("click",e=>{ const b=e.target.closest("button"); const f=curField(); if(!b||!f) return;
-  f.align=b.dataset.a; refreshFieldEditor(); renderFieldLayer(); });
+  f.align=b.dataset.a;
+  // move the field where the button says: centre snaps to exact page centre,
+  // left/right snap toward the margins. Drag afterwards to fine-tune.
+  if(f.align==="center") f.xFrac=0.5;
+  else if(f.align==="left") f.xFrac=0.10;
+  else if(f.align==="right") f.xFrac=0.90;
+  refreshFieldEditor(); renderFieldLayer(); });
 $("#weightSeg").addEventListener("click",e=>{ const b=e.target.closest("button"); const f=curField(); if(!b||!f) return;
   f.weight=b.dataset.w; refreshFieldEditor(); renderFieldLayer(); updateWarnings(); });
 $("#fsize").oninput=e=>{ const f=curField(); if(!f) return;
@@ -532,9 +624,13 @@ async function addCustomFont(bytes, name, select){
 }
 
 /* ---------------- preview layer ---------------- */
+function valText(f, row, rowIdx){
+  if(f.col==="serial") return (f.serialPrefix||"")+String(rowIdx+1).padStart(3,"0");
+  return ((row||[])[f.col]??"").toString();
+}
 function fieldText(f){
-  const row=state.rows[state.previewRow]||[];
-  return (row[f.col]!==undefined && row[f.col]!=="") ? row[f.col] : "("+f.label+")";
+  const t=valText(f, state.rows[state.previewRow], state.previewRow);
+  return t!=="" ? t : "("+f.label+")";
 }
 function cssFont(f){
   const ft=state.fonts.find(x=>x.id===f.fontId)||BUILTIN_FONTS[0];
@@ -553,6 +649,11 @@ function renderFieldLayer(){
   const layer=$("#fieldLayer"); if(!layer) return;
   layer.innerHTML="";
   if(!state.cssW) return;
+  if(!state.fields.length && state.tpl.bytes){
+    const h=document.createElement("div"); h.className="layerHint";
+    h.innerHTML="Add a field in step 3 —<br>it appears here, ready to drag.";
+    layer.appendChild(h); return;
+  }
   state.fields.forEach(f=>{
     const el=document.createElement("div");
     el.className="fEl"+(f.id===state.selField?" sel":"");
@@ -562,7 +663,8 @@ function renderFieldLayer(){
     el.textContent=text;
     el.style.fontFamily=family; el.style.fontWeight=weight;
     el.style.fontSize=px+"px"; el.style.color=f.color;
-    const lbl=document.createElement("span"); lbl.className="tagLbl"; lbl.textContent=f.label;
+    const lbl=document.createElement("span"); lbl.className="tagLbl";
+    lbl.textContent=`${f.label} · ${Math.round(f.xFrac*100)}%, ${Math.round(f.yFrac*100)}%`;
     el.appendChild(lbl);
     // position: anchor at xFrac; baseline at yFrac
     measureCtx.font=`${weight} ${px}px ${family}`;
@@ -574,6 +676,12 @@ function renderFieldLayer(){
     el.style.transform= f.align==="center"?"translateX(-50%)": f.align==="right"?"translateX(-100%)":"none";
     attachDrag(el,f);
     layer.appendChild(el);
+    if(f.id===state.selField){
+      // the anchor crosshair: this exact point is used on EVERY certificate
+      const a=document.createElement("div"); a.className="anch"; a.dataset.for=f.id;
+      a.style.left=(X-6.5)+"px"; a.style.top=(f.yFrac*state.cssH-6.5)+"px";
+      layer.appendChild(a);
+    }
   });
 }
 function attachDrag(el,f){
@@ -604,6 +712,10 @@ function positionEl(el,f){
   const ascent=m.actualBoundingBoxAscent||px*0.72;
   el.style.left=(f.xFrac*state.cssW)+"px";
   el.style.top=(f.yFrac*state.cssH-ascent)+"px";
+  const lbl=el.querySelector(".tagLbl");
+  if(lbl) lbl.textContent=`${f.label} · ${Math.round(f.xFrac*100)}%, ${Math.round(f.yFrac*100)}%`;
+  const a=document.querySelector('.anch[data-for="'+f.id+'"]');
+  if(a){ a.style.left=(f.xFrac*state.cssW-6.5)+"px"; a.style.top=(f.yFrac*state.cssH-6.5)+"px"; }
 }
 
 /* row navigation */
@@ -623,6 +735,14 @@ function updateRowNav(){
   $("#rPrev").disabled=state.previewRow<=0;
   $("#rNext").disabled=state.previewRow>=state.rows.length-1;
 }
+// arrow keys page through rows (when not typing in a field)
+document.addEventListener("keydown",e=>{
+  const t=e.target.tagName;
+  if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT") return;
+  if(!state.rows.length||!state.tpl.bytes) return;
+  if(e.key==="ArrowRight"){ $("#rNext").click(); e.preventDefault(); }
+  else if(e.key==="ArrowLeft"){ $("#rPrev").click(); e.preventDefault(); }
+});
 
 /* shrink warnings (canvas metrics ≈ good enough to flag) */
 function updateWarnings(){
@@ -631,7 +751,7 @@ function updateWarnings(){
   const flagged=[];
   state.rows.forEach((row,i)=>{
     for(const f of state.fields){
-      const t=row[f.col]; if(!t) continue;
+      const t=valText(f,row,i); if(!t) continue;
       const {family,weight}=cssFont(f);
       const basePx=f.sizePt*state.cssScale;
       measureCtx.font=`${weight} ${basePx}px ${family}`;
@@ -671,17 +791,26 @@ async function embedFieldFonts(doc){
   }
   return map;
 }
-function stampRow(page, row, fonts, OW, OH){
+function stampRow(page, row, rowIdx, fonts, x0, y0, pw, ph, scale){
   for(const f of state.fields){
-    const text=(row[f.col]??"").toString(); if(!text) continue;
+    const text=valText(f,row,rowIdx); if(!text) continue;
     const font=fonts.get(f._fkey);
-    let size=f.sizePt, w=font.widthOfTextAtSize(text,size);
-    const maxW=OW*f.fitFrac;
-    if(w>maxW){ size=Math.max(6,size*(maxW/w)); w=font.widthOfTextAtSize(text,size); }
-    const X=OW*f.xFrac;
+    let size=f.sizePt*scale, w=font.widthOfTextAtSize(text,size);
+    const maxW=pw*f.fitFrac;
+    if(w>maxW){ size=Math.max(4,size*(maxW/w)); w=font.widthOfTextAtSize(text,size); }
+    const X=x0+pw*f.xFrac;
     const x=f.align==="center"?X-w/2 : f.align==="right"?X-w : X;
-    const y=OH*(1-f.yFrac);
+    const y=y0+ph*(1-f.yFrac);
     page.drawText(text,{x,y,size,font,color:hexToRgb(f.color)});
+  }
+}
+function drawCropMarks(page, x0, y0, pw, ph){
+  const L=10, off=3, opts={thickness:0.6, color:rgb(0.2,0.2,0.2)};
+  const corners=[[x0,y0],[x0+pw,y0],[x0,y0+ph],[x0+pw,y0+ph]];
+  for(const [cx,cy] of corners){
+    const dx=cx===x0?-1:1, dy=cy===y0?-1:1;
+    page.drawLine({start:{x:cx+dx*off,y:cy},end:{x:cx+dx*(off+L),y:cy},...opts});
+    page.drawLine({start:{x:cx,y:cy+dy*off},end:{x:cx,y:cy+dy*(off+L)},...opts});
   }
 }
 async function generateMerged(){
@@ -689,44 +818,94 @@ async function generateMerged(){
   const fonts=await embedFieldFonts(out);
   const tpl=await PDFDocument.load(state.tpl.bytes);
   const emb=await out.embedPage(tpl.getPage(0));
-  const [OW,OH]=outSize();
-  for(let i=0;i<state.rows.length;i++){
-    const page=out.addPage([OW,OH]);
-    page.drawPage(emb,{x:0,y:0,width:OW,height:OH});
-    stampRow(page, state.rows[i], fonts, OW, OH);
-    if(i%8===0){ $("#progress").textContent=`building… ${i+1}/${state.rows.length}`; await new Promise(r=>setTimeout(r)); }
+  if(state.layout.mode==="grid"){
+    const g=gridGeom();
+    if(!g.valid) throw new Error("Grid doesn't fit the sheet — reduce cols/rows or margins");
+    let page=null;
+    for(let i=0;i<state.rows.length;i++){
+      const pos=i%g.perSheet;
+      if(pos===0) page=out.addPage([g.SW,g.SH]);
+      const c=pos%g.cols, r=Math.floor(pos/g.cols);
+      const x0=g.M+c*(g.cellW+g.G)+(g.cellW-g.pw)/2;
+      const yTop=g.M+r*(g.cellH+g.G)+(g.cellH-g.ph)/2;
+      const y0=g.SH-yTop-g.ph;
+      page.drawPage(emb,{x:x0,y:y0,width:g.pw,height:g.ph});
+      stampRow(page, state.rows[i], i, fonts, x0, y0, g.pw, g.ph, g.scale);
+      if(state.layout.crop) drawCropMarks(page,x0,y0,g.pw,g.ph);
+      if(i%8===0){ $("#progress").textContent=`building… ${i+1}/${state.rows.length}`; await new Promise(r2=>setTimeout(r2)); }
+    }
+  } else {
+    const [OW,OH]=outSize();
+    for(let i=0;i<state.rows.length;i++){
+      const page=out.addPage([OW,OH]);
+      page.drawPage(emb,{x:0,y:0,width:OW,height:OH});
+      stampRow(page, state.rows[i], i, fonts, 0, 0, OW, OH, 1);
+      if(i%8===0){ $("#progress").textContent=`building… ${i+1}/${state.rows.length}`; await new Promise(r=>setTimeout(r)); }
+    }
   }
   return out.save();
 }
+async function buildSingleDoc(i, tpl){
+  // one piece, at artwork size in grid mode / output size in single mode
+  const doc=await PDFDocument.create();
+  const fonts=await embedFieldFonts(doc);
+  const emb=await doc.embedPage(tpl.getPage(0));
+  const [OW,OH]= state.layout.mode==="grid" ? [state.tpl.wpt,state.tpl.hpt] : outSize();
+  const page=doc.addPage([OW,OH]);
+  page.drawPage(emb,{x:0,y:0,width:OW,height:OH});
+  stampRow(page, state.rows[i], i, fonts, 0, 0, OW, OH, 1);
+  return doc.save();
+}
+function rowFileBase(i){
+  const f0=state.fields[0];
+  const v=f0?valText(f0,state.rows[i],i):"";
+  return sanitizeFile(v||("page_"+(i+1)));
+}
 async function generateZip(){
   const zip=new JSZip(); const used=new Set();
-  const nameCol=state.fields.length?state.fields[0].col:0;
-  const [OW,OH]=outSize();
-  const tpl=await PDFDocument.load(state.tpl.bytes); // load once, embed per doc
+  const tpl=await PDFDocument.load(state.tpl.bytes); // load once
   for(let i=0;i<state.rows.length;i++){
-    const doc=await PDFDocument.create();
-    const fonts=await embedFieldFonts(doc);
-    const emb=await doc.embedPage(tpl.getPage(0));
-    const page=doc.addPage([OW,OH]);
-    page.drawPage(emb,{x:0,y:0,width:OW,height:OH});
-    stampRow(page, state.rows[i], fonts, OW, OH);
-    let base=sanitizeFile(state.rows[i][nameCol]||("page_"+(i+1)));
-    let fname=base+".pdf", n=2;
+    const bytes=await buildSingleDoc(i,tpl);
+    let base=rowFileBase(i), fname=base+".pdf", n=2;
     while(used.has(fname)) fname=`${base}_${n++}.pdf`;
     used.add(fname);
-    zip.file(fname, await doc.save());
+    zip.file(fname, bytes);
     $("#progress").textContent=`building… ${i+1}/${state.rows.length}`;
     if(i%4===0) await new Promise(r=>setTimeout(r));
   }
   return zip.generateAsync({type:"uint8array"});
 }
+async function generatePngs(){
+  const zip=new JSZip(); const used=new Set();
+  const tpl=await PDFDocument.load(state.tpl.bytes);
+  const scale=Math.min(3, 1650/state.tpl.wpt); // ~1650px wide, capped
+  for(let i=0;i<state.rows.length;i++){
+    const bytes=await buildSingleDoc(i,tpl);
+    const pdoc=await pdfjsLib.getDocument({data:bytes}).promise;
+    const page=await pdoc.getPage(1);
+    const vp=page.getViewport({scale});
+    const cv=document.createElement("canvas");
+    cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+    await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+    const blob=await new Promise(res=>cv.toBlob(res,"image/png"));
+    let base=rowFileBase(i), fname=base+".png", n=2;
+    while(used.has(fname)) fname=`${base}_${n++}.png`;
+    used.add(fname);
+    zip.file(fname, new Uint8Array(await blob.arrayBuffer()));
+    pdoc.destroy();
+    $("#progress").textContent=`rendering… ${i+1}/${state.rows.length}`;
+  }
+  return zip.generateAsync({type:"uint8array"});
+}
 async function runGen(kind){
-  const btns=[$("#genBtn"),$("#zipBtn")]; btns.forEach(b=>b.disabled=true);
+  const btns=[$("#genBtn"),$("#zipBtn"),$("#pngBtn")]; btns.forEach(b=>b.disabled=true);
   try{
     if(kind==="pdf"){ download(await generateMerged(),"certificates.pdf","application/pdf");
-      $("#progress").textContent=`done · ${state.rows.length} pages`; }
-    else { download(await generateZip(),"certificates.zip","application/zip");
-      $("#progress").textContent=`done · ${state.rows.length} files zipped`; }
+      $("#progress").textContent="done"; }
+    else if(kind==="zip"){ download(await generateZip(),"certificates-pdf.zip","application/zip");
+      $("#progress").textContent=`done · ${state.rows.length} files`; }
+    else { download(await generatePngs(),"certificates-png.zip","application/zip");
+      $("#progress").textContent=`done · ${state.rows.length} images`; }
   }catch(e){ console.error(e);
     $("#progress").textContent="";
     $("#warnline").innerHTML=`<div class="callout err">Generation failed: ${escapeHtml(e.message||String(e))}. If a custom font is set, try Helvetica on that field to isolate the cause.</div>`;
@@ -734,6 +913,7 @@ async function runGen(kind){
 }
 $("#genBtn").onclick=()=>runGen("pdf");
 $("#zipBtn").onclick=()=>runGen("zip");
+$("#pngBtn").onclick=()=>runGen("png");
 
 /* ---------------- project save / load ---------------- */
 $("#saveProj").onclick=()=>{
@@ -743,6 +923,7 @@ $("#saveProj").onclick=()=>{
     fields: state.fields.map(f=>({...f,_fkey:undefined})),
     dataRaw: state.dataRaw, hasHeader: state.hasHeader,
     sizePreset: $("#sizePreset").value, cw:$("#cw").value, ch:$("#ch").value,
+    layout: {...state.layout},
   };
   download(new TextEncoder().encode(JSON.stringify(proj)), "certificate-press-project.json", "application/json");
 };
@@ -769,6 +950,13 @@ async function loadProject(proj){
   $("#sizePreset").value=proj.sizePreset||"keep";
   $("#customSize").style.display=$("#sizePreset").value==="custom"?"flex":"none";
   if(proj.cw)$("#cw").value=proj.cw; if(proj.ch)$("#ch").value=proj.ch;
+  if(proj.layout){ Object.assign(state.layout, proj.layout); }
+  else { Object.assign(state.layout, {mode:"single",sheet:"a4p",cols:2,rows:4,marginMm:10,gapMm:6,crop:true}); }
+  [...$("#layoutSeg").children].forEach(b=>b.setAttribute("aria-pressed", b.dataset.l===state.layout.mode));
+  $("#gridOpts").style.display=state.layout.mode==="grid"?"block":"none";
+  $("#sizeBlock").style.display=state.layout.mode==="grid"?"none":"block";
+  $("#gSheet").value=state.layout.sheet; $("#gCols").value=state.layout.cols; $("#gRows").value=state.layout.rows;
+  $("#gMargin").value=state.layout.marginMm; $("#gGap").value=state.layout.gapMm; $("#gCrop").checked=!!state.layout.crop;
   parseData();
   (proj.fields||[]).forEach(f=>{
     const nf={...f}; if(idMap[nf.fontId]) nf.fontId=idMap[nf.fontId];
@@ -821,9 +1009,17 @@ async function loadSample(){
 
 /* ---------------- readiness ---------------- */
 function refreshAll(){
-  updateSizeReadout();
-  const ready=state.tpl.bytes && state.rows.length>0 && state.fields.length>0;
-  $("#genBtn").disabled=!ready; $("#zipBtn").disabled=!ready;
+  updateSizeReadout(); updateGridNote();
+  const ready=state.tpl.bytes && state.rows.length>0 && state.fields.length>0
+    && (state.layout.mode!=="grid" || gridGeom().valid);
+  $("#genBtn").disabled=!ready; $("#zipBtn").disabled=!ready; $("#pngBtn").disabled=!ready;
+  const n=state.rows.length;
+  if(state.layout.mode==="grid" && state.tpl.bytes){
+    const g=gridGeom(); const sheets=n&&g.valid?Math.ceil(n/g.perSheet):0;
+    $("#countBox").innerHTML=`<b>${n}</b> pieces · <b>${sheets}</b> sheet${sheets!==1?"s":""} of ${g.perSheet}`;
+  } else {
+    $("#countBox").innerHTML=`<b>${n}</b> personalised page${n!==1?"s":""} ready`;
+  }
   $("#p3").classList.toggle("done", state.fields.length>0);
   updateRowNav(); updateWarnings();
 }
