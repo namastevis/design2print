@@ -27,6 +27,10 @@ the WiFi doesn't.
 - **Unlimited fields** — Name, Workshop, Date, Seat, ID… each reads one column.
 - **Serial numbers** — any field can auto-number (001, 002…) with an optional
   prefix like `CIID-`, no data column needed.
+- **Image fields** — place a signature, stamp, or logo (same on every page), or
+  **per-person photos for ID cards**: upload a photo set and a data column with
+  each person's file name matches them automatically; unmatched rows are
+  flagged. PNG (with transparency) and JPG supported, width adjustable.
 - **Fonts**: three built-ins (Helvetica, Times, Courier) plus **upload your own
   .ttf/.otf** — uploaded fonts are embedded into the PDFs and available to
   every field.

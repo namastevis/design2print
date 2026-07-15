@@ -270,7 +270,7 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
 
           <div id="fieldEditor" style="display:none">
             <div class="row">
-              <div style="flex:1.4"><label class="fld">Uses column</label><select id="fCol"></select></div>
+              <div style="flex:1.4" id="colWrap"><label class="fld">Uses column</label><select id="fCol"></select></div>
               <div><label class="fld">Alignment</label>
                 <div class="seg" id="alignSeg">
                   <button data-a="left">Left</button><button data-a="center" aria-pressed="true">Centre</button><button data-a="right">Right</button>
@@ -281,6 +281,29 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
               <div><label class="fld">Serial prefix — optional, e.g. CIID-</label>
                 <input type="text" id="fPrefix" placeholder="leave empty for plain 001, 002…"></div>
             </div>
+
+            <div id="imgOpts" style="display:none; margin-top:12px">
+              <label class="fld">Image source</label>
+              <div class="seg" id="imgModeSeg">
+                <button data-m="static" aria-pressed="true">Same on every page</button>
+                <button data-m="row">Per person · photos</button>
+              </div>
+              <div id="imgStaticWrap" style="margin-top:8px">
+                <button class="btn ghost sm" id="imgUpBtn">Upload image (.png / .jpg)…</button>
+                <input type="file" id="imgInput" accept="image/png,image/jpeg" hidden>
+                <div id="imgChip"></div>
+              </div>
+              <div id="imgRowWrap" style="display:none; margin-top:8px">
+                <button class="btn ghost sm" id="poolUpBtn">Upload photo set (multiple files)…</button>
+                <input type="file" id="poolInput" accept="image/png,image/jpeg" multiple hidden>
+                <div id="poolChip"></div>
+                <div class="hint">The selected column must contain each person's photo file name (e.g. <b>priya.jpg</b> — extension optional). Unmatched rows are flagged.</div>
+              </div>
+              <label class="fld" style="margin-top:12px">Image width <span id="iwVal" style="color:var(--blue-deep)">16%</span> of page width</label>
+              <input type="range" id="iwidth" min="3" max="80" value="16">
+            </div>
+
+            <div id="textOpts">
             <div class="row" style="margin-top:10px">
               <div style="flex:1.4"><label class="fld">Font</label><select id="fFont"></select></div>
               <div id="weightWrap"><label class="fld">Weight</label>
@@ -297,6 +320,7 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
             </div>
             <label class="fld" style="margin-top:12px">Shrink long values to fit within <span id="fitVal" style="color:var(--blue-deep)">62%</span> of page width</label>
             <input type="range" id="fitw" min="15" max="95" value="62">
+            </div><!-- /textOpts -->
           </div>
           <div class="hint" id="noFieldHint">Add a field for each changing detail — Name, Workshop, Date… Each field reads one column of your pasted data.</div>
         </div>
@@ -346,7 +370,7 @@ Rahul Verma	Design for Emerging Tech	13–18 July 2026"></textarea>
 <div class="modal" id="howModal" role="dialog" aria-label="How Certificate Press works">
   <div class="box">
     <button class="close" id="howClose" aria-label="close">✕</button>
-    <img src="flow.svg" alt="How it works: 1 load your artwork PDF, 2 paste people and details from a spreadsheet, 3 add fields and drag them into place, 4 proof every row, 5 export as one merged PDF, a ZIP of individual PDFs, or a ZIP of PNG images. Along the way: upload your own fonts, badge grid layout with crop marks and serial numbers, and save the whole project to one file. Everything stays in your browser.">
+    <img src="flow.svg" alt="How it works: 1 load your artwork PDF, 2 paste people and details from a spreadsheet, 3 add fields and drag them into place, 4 proof every row, 5 export as one merged PDF, a ZIP of individual PDFs, or a ZIP of PNG images. Along the way: upload your own fonts, badge grid layout with crop marks and serial numbers, place signatures or stamps on every page or per-person photos for ID cards, and save the whole project to one file. Everything stays in your browser.">
   </div>
 </div>
 
@@ -371,10 +395,14 @@ const state = {
   cssScale:1, cssW:0, cssH:0,
   dataRaw:"", hasHeader:false, rows:[], headers:null, nCols:0,
   fonts:[...BUILTIN_FONTS],        // pool; uploaded fonts appended
-  fields:[],                        // {id,label,col,fontId,weight,sizePt,color,align,fitFrac,xFrac,yFrac,serialPrefix}
+  fields:[],                        // text: {type,col,fontId,weight,sizePt,color,align,fitFrac,xFrac,yFrac,serialPrefix}
+                                    // image:{type:'image',imgMode:'static'|'row',imgId,col,widthFrac,align,xFrac,yFrac}
   selField:null, previewRow:0,
   layout:{mode:"single", sheet:"a4p", cols:2, rows:4, marginMm:10, gapMm:6, crop:true},
+  assets:{},                        // id -> {name, bytes, url, w, h}
+  photoPool:[],                     // asset ids uploaded as the per-person photo set
 };
+let assetSeq=1;
 let fieldSeq = 1;
 
 /* ---------------- helpers ---------------- */
@@ -541,10 +569,11 @@ function colName(i){
 /* ---------------- STEP 3: fields ---------------- */
 function addField(preset){
   const f=Object.assign({
-    id:"f"+(fieldSeq++), label:"Field", col:0, fontId:"helv", weight:"bold",
+    id:"f"+(fieldSeq++), type:"text", label:"Field", col:0, fontId:"helv", weight:"bold",
     sizePt:40, color:"#16305C", align:"center", fitFrac:0.62, xFrac:0.5, yFrac:0.5,
+    imgMode:"static", imgId:null, widthFrac:0.16,
   }, preset||{});
-  f.label = f.label==="Field" ? colName(f.col) : f.label;
+  if(f.label==="Field") f.label = f.type==="image" ? "Image" : colName(f.col);
   state.fields.push(f); state.selField=f.id;
   renderChips(); refreshFieldEditor(); renderFieldLayer(); refreshAll();
 }
@@ -566,9 +595,13 @@ function renderChips(){
     c.appendChild(el);
   });
   const add=document.createElement("span");
-  add.className="chip add"; add.textContent="+ Add field";
-  add.onclick=()=>addField({col:Math.min(state.fields.length,Math.max(0,state.nCols-1))});
+  add.className="chip add"; add.textContent="+ Text field";
+  add.onclick=()=>addField({type:"text", col:Math.min(state.fields.length,Math.max(0,state.nCols-1))});
   c.appendChild(add);
+  const addI=document.createElement("span");
+  addI.className="chip add"; addI.textContent="+ Image / photo";
+  addI.onclick=()=>addField({type:"image", label:"Image"});
+  c.appendChild(addI);
 }
 
 function refreshFieldEditor(){
@@ -576,22 +609,39 @@ function refreshFieldEditor(){
   $("#noFieldHint").style.display=f?"none":"block";
   ed.style.display=f?"block":"none";
   if(!f) return;
-  // column select (+ serial number pseudo-column)
+  const isImg=f.type==="image";
+  $("#textOpts").style.display=isImg?"none":"block";
+  $("#imgOpts").style.display=isImg?"block":"none";
+  $("#colWrap").style.display=(isImg && f.imgMode==="static")?"none":"block";
+  // column select (+ serial number pseudo-column, text fields only)
   const sel=$("#fCol"); sel.innerHTML="";
   const n=Math.max(state.nCols,1);
   for(let i=0;i<n;i++){ const o=document.createElement("option"); o.value=i; o.textContent=colName(i); sel.appendChild(o); }
-  const so=document.createElement("option"); so.value="serial"; so.textContent="Serial number · 001, 002…"; sel.appendChild(so);
-  sel.value = f.col==="serial" ? "serial" : Math.min(f.col,n-1);
-  $("#serialRow").style.display = f.col==="serial" ? "flex" : "none";
+  if(!isImg){
+    const so=document.createElement("option"); so.value="serial"; so.textContent="Serial number · 001, 002…"; sel.appendChild(so);
+  }
+  sel.value = f.col==="serial" ? "serial" : Math.min(+f.col||0,n-1);
+  $("#serialRow").style.display = (!isImg && f.col==="serial") ? "flex" : "none";
   $("#fPrefix").value = f.serialPrefix||"";
-  // font select
+  [...$("#alignSeg").children].forEach(b=>b.setAttribute("aria-pressed", b.dataset.a===f.align));
+  if(isImg){
+    [...$("#imgModeSeg").children].forEach(b=>b.setAttribute("aria-pressed", b.dataset.m===f.imgMode));
+    $("#imgStaticWrap").style.display=f.imgMode==="static"?"block":"none";
+    $("#imgRowWrap").style.display=f.imgMode==="row"?"block":"none";
+    $("#imgChip").innerHTML = f.imgId && state.assets[f.imgId]
+      ? `<div class="filechip"><b>IMG</b> ${escapeHtml(state.assets[f.imgId].name)}</div>` : "";
+    $("#poolChip").innerHTML = state.photoPool.length
+      ? `<div class="filechip"><b>${state.photoPool.length}</b> photos in the set</div>` : "";
+    $("#iwidth").value=Math.round(f.widthFrac*100); $("#iwVal").textContent=Math.round(f.widthFrac*100)+"%";
+    return;
+  }
+  // text-only controls
   const fs=$("#fFont"); fs.innerHTML="";
   state.fonts.forEach(ft=>{ const o=document.createElement("option"); o.value=ft.id; o.textContent=ft.label; fs.appendChild(o); });
   fs.value=f.fontId;
   const ft=state.fonts.find(x=>x.id===f.fontId);
   $("#weightWrap").style.display=(ft&&ft.kind==="std")?"block":"none";
   [...$("#weightSeg").children].forEach(b=>b.setAttribute("aria-pressed", b.dataset.w===f.weight));
-  [...$("#alignSeg").children].forEach(b=>b.setAttribute("aria-pressed", b.dataset.a===f.align));
   $("#fsize").value=f.sizePt; $("#sizeVal").textContent=f.sizePt+" pt";
   $("#fcolor").value=f.color;
   $("#fitw").value=Math.round(f.fitFrac*100); $("#fitVal").textContent=Math.round(f.fitFrac*100)+"%";
@@ -621,6 +671,54 @@ $("#fsize").oninput=e=>{ const f=curField(); if(!f) return;
 $("#fcolor").oninput=e=>{ const f=curField(); if(!f) return; f.color=e.target.value; renderChips(); renderFieldLayer(); };
 $("#fitw").oninput=e=>{ const f=curField(); if(!f) return;
   f.fitFrac=+e.target.value/100; $("#fitVal").textContent=e.target.value+"%"; renderFieldLayer(); updateWarnings(); };
+
+/* image assets (static images + per-person photo pool) */
+async function addAsset(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  const url=URL.createObjectURL(new Blob([bytes],{type:file.type}));
+  const dim=await new Promise((res,rej)=>{ const im=new Image();
+    im.onload=()=>res({w:im.naturalWidth,h:im.naturalHeight});
+    im.onerror=()=>rej(new Error("unreadable image")); im.src=url; });
+  const id="a"+(assetSeq++);
+  state.assets[id]={name:file.name, bytes, url, w:dim.w, h:dim.h};
+  return id;
+}
+$("#imgUpBtn").onclick=()=>$("#imgInput").click();
+$("#imgInput").onchange=async()=>{
+  const file=$("#imgInput").files[0]; const f=curField();
+  if(!file||!f) return;
+  try{ f.imgId=await addAsset(file); }
+  catch(e){ $("#imgChip").innerHTML=`<div class="callout err">Couldn't read that image — use PNG or JPG.</div>`; return; }
+  $("#imgInput").value="";
+  refreshFieldEditor(); renderFieldLayer(); updateWarnings();
+};
+$("#poolUpBtn").onclick=()=>$("#poolInput").click();
+$("#poolInput").onchange=async()=>{
+  const files=[...$("#poolInput").files]; if(!files.length) return;
+  let ok=0;
+  for(const file of files){ try{ state.photoPool.push(await addAsset(file)); ok++; }catch(e){} }
+  $("#poolInput").value="";
+  refreshFieldEditor(); renderFieldLayer(); updateWarnings();
+};
+$("#imgModeSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); const f=curField(); if(!b||!f) return;
+  f.imgMode=b.dataset.m; refreshFieldEditor(); renderFieldLayer(); updateWarnings();
+});
+$("#iwidth").oninput=e=>{ const f=curField(); if(!f) return;
+  f.widthFrac=+e.target.value/100; $("#iwVal").textContent=e.target.value+"%";
+  renderFieldLayer(); };
+function normName(s){ return String(s||"").trim().toLowerCase(); }
+function baseName(s){ return normName(s).replace(/\.(png|jpe?g)$/,""); }
+function matchPhoto(f,row){
+  if(f.imgMode==="static") return f.imgId;
+  const want=normName((row||[])[f.col]); if(!want) return null;
+  const wantB=baseName(want);
+  for(const id of state.photoPool){
+    const n=normName(state.assets[id].name);
+    if(n===want || baseName(n)===wantB) return id;
+  }
+  return null;
+}
 
 /* font upload */
 $("#fontUpBtn").onclick=()=>$("#fontInput").click();
@@ -683,21 +781,43 @@ function renderFieldLayer(){
   state.fields.forEach(f=>{
     const el=document.createElement("div");
     el.className="fEl"+(f.id===state.selField?" sel":"");
-    const text=fieldText(f);
-    const {family,weight}=cssFont(f);
-    const px=previewFitSizePx(f,text);
-    el.textContent=text;
-    el.style.fontFamily=family; el.style.fontWeight=weight;
-    el.style.fontSize=px+"px"; el.style.color=f.color;
+    let ascent=0;
+    if(f.type==="image"){
+      const aid=matchPhoto(f, state.rows[state.previewRow]);
+      const w=f.widthFrac*state.cssW;
+      if(aid && state.assets[aid]){
+        const a=state.assets[aid];
+        const im=document.createElement("img");
+        im.src=a.url; im.style.width=w+"px"; im.style.display="block"; im.draggable=false;
+        el.appendChild(im);
+        el.style.height=(w*a.h/a.w)+"px";
+      } else {
+        el.style.width=w+"px"; el.style.height=(w*0.75)+"px";
+        el.style.background="rgba(24,87,196,.06)";
+        el.style.display="grid"; el.style.placeItems="center";
+        const t=document.createElement("span");
+        t.textContent = f.imgMode==="row" ? "no photo match" : "no image yet";
+        t.style.cssText="font:9px ui-monospace,monospace;color:#5B616C";
+        el.appendChild(t);
+      }
+      const hpx=parseFloat(el.style.height)||0;
+      el.style.top=(f.yFrac*state.cssH - hpx/2)+"px";  // yFrac = vertical centre for images
+    } else {
+      const text=fieldText(f);
+      const {family,weight}=cssFont(f);
+      const px=previewFitSizePx(f,text);
+      el.textContent=text;
+      el.style.fontFamily=family; el.style.fontWeight=weight;
+      el.style.fontSize=px+"px"; el.style.color=f.color;
+      measureCtx.font=`${weight} ${px}px ${family}`;
+      const m=measureCtx.measureText(text);
+      ascent=m.actualBoundingBoxAscent||px*0.72;
+      el.style.top=(f.yFrac*state.cssH-ascent)+"px";
+    }
     const lbl=document.createElement("span"); lbl.className="tagLbl";
     lbl.textContent=`${f.label} · ${Math.round(f.xFrac*100)}%, ${Math.round(f.yFrac*100)}%`;
     el.appendChild(lbl);
-    // position: anchor at xFrac; baseline at yFrac
-    measureCtx.font=`${weight} ${px}px ${family}`;
-    const m=measureCtx.measureText(text);
-    const ascent=m.actualBoundingBoxAscent||px*0.72;
     const X=f.xFrac*state.cssW;
-    el.style.top=(f.yFrac*state.cssH-ascent)+"px";
     el.style.left=X+"px";
     el.style.transform= f.align==="center"?"translateX(-50%)": f.align==="right"?"translateX(-100%)":"none";
     attachDrag(el,f);
@@ -730,14 +850,19 @@ function attachDrag(el,f){
   ["pointerup","pointercancel"].forEach(ev=>el.addEventListener(ev,()=>{ d=null; el.classList.remove("drag"); }));
 }
 function positionEl(el,f){
-  const text=(el.firstChild && el.firstChild.nodeType===3) ? el.firstChild.nodeValue : el.textContent;
-  const {family,weight}=cssFont(f);
-  const px=parseFloat(el.style.fontSize);
-  measureCtx.font=`${weight} ${px}px ${family}`;
-  const m=measureCtx.measureText(text);
-  const ascent=m.actualBoundingBoxAscent||px*0.72;
-  el.style.left=(f.xFrac*state.cssW)+"px";
-  el.style.top=(f.yFrac*state.cssH-ascent)+"px";
+  if(f.type==="image"){
+    el.style.left=(f.xFrac*state.cssW)+"px";
+    el.style.top=(f.yFrac*state.cssH - (el.offsetHeight||0)/2)+"px";
+  } else {
+    const text=(el.firstChild && el.firstChild.nodeType===3) ? el.firstChild.nodeValue : el.textContent;
+    const {family,weight}=cssFont(f);
+    const px=parseFloat(el.style.fontSize);
+    measureCtx.font=`${weight} ${px}px ${family}`;
+    const m=measureCtx.measureText(text);
+    const ascent=m.actualBoundingBoxAscent||px*0.72;
+    el.style.left=(f.xFrac*state.cssW)+"px";
+    el.style.top=(f.yFrac*state.cssH-ascent)+"px";
+  }
   const lbl=el.querySelector(".tagLbl");
   if(lbl) lbl.textContent=`${f.label} · ${Math.round(f.xFrac*100)}%, ${Math.round(f.yFrac*100)}%`;
   const a=document.querySelector('.anch[data-for="'+f.id+'"]');
@@ -774,9 +899,13 @@ document.addEventListener("keydown",e=>{
 function updateWarnings(){
   const box=$("#warnline"); box.innerHTML="";
   if(!state.rows.length || !state.fields.length || !state.cssW) return;
-  const flagged=[];
+  const flagged=[]; const noPhoto=[];
   state.rows.forEach((row,i)=>{
     for(const f of state.fields){
+      if(f.type==="image"){
+        if(f.imgMode==="row" && !matchPhoto(f,row) && !noPhoto.includes(i)) noPhoto.push(i);
+        continue;
+      }
       const t=valText(f,row,i); if(!t) continue;
       const {family,weight}=cssFont(f);
       const basePx=f.sizePt*state.cssScale;
@@ -785,12 +914,16 @@ function updateWarnings(){
       if(w>maxW && basePx*(maxW/w) < basePx*0.65){ flagged.push(i); break; }
     }
   });
+  let html="";
+  if(noPhoto.length){
+    const list=noPhoto.slice(0,6).map(i=>"#"+(i+1)).join(", ")+(noPhoto.length>6?" …":"");
+    html+=`<div class="callout warn">${noPhoto.length} row${noPhoto.length>1?"s":""} have no matching photo (${list}) — check file names against the column.</div>`;
+  }
   if(flagged.length){
     const list=flagged.slice(0,6).map(i=>"#"+(i+1)).join(", ")+(flagged.length>6?" …":"");
-    box.innerHTML=`<div class="callout warn">${flagged.length} row${flagged.length>1?"s":""} shrink noticeably to fit (${list}). Use ‹ › to proof them, widen the fit limit, or shorten the value.</div>`;
-  } else {
-    box.innerHTML=`<div class="callout good">All values fit comfortably at their set sizes.</div>`;
+    html+=`<div class="callout warn">${flagged.length} row${flagged.length>1?"s":""} shrink noticeably to fit (${list}). Use ‹ › to proof them, widen the fit limit, or shorten the value.</div>`;
   }
+  box.innerHTML = html || `<div class="callout good">All values fit comfortably at their set sizes.</div>`;
 }
 
 /* ---------------- generation ---------------- */
@@ -817,8 +950,34 @@ async function embedFieldFonts(doc){
   }
   return map;
 }
-function stampRow(page, row, rowIdx, fonts, x0, y0, pw, ph, scale){
+function isPng(b){ return b[0]===0x89&&b[1]===0x50; }
+async function embedNeededImages(doc, rowIdxs){
+  // one embedded object per unique asset used by these rows
+  const map=new Map();
   for(const f of state.fields){
+    if(f.type!=="image") continue;
+    for(const i of rowIdxs){
+      const aid=matchPhoto(f, state.rows[i]);
+      if(!aid || map.has(aid)) continue;
+      const a=state.assets[aid];
+      map.set(aid, isPng(a.bytes) ? await doc.embedPng(a.bytes) : await doc.embedJpg(a.bytes));
+    }
+  }
+  return map;
+}
+function stampRow(page, row, rowIdx, fonts, images, x0, y0, pw, ph, scale){
+  for(const f of state.fields){
+    if(f.type==="image"){
+      const aid=matchPhoto(f,row); if(!aid) continue;
+      const img=images.get(aid); if(!img) continue;
+      const a=state.assets[aid];
+      const tw=pw*f.widthFrac, th=tw*a.h/a.w;
+      const X=x0+pw*f.xFrac;
+      const x=f.align==="center"?X-tw/2 : f.align==="right"?X-tw : X;
+      const y=y0+ph*(1-f.yFrac)-th/2;              // yFrac = vertical centre
+      page.drawImage(img,{x,y,width:tw,height:th});
+      continue;
+    }
     const text=valText(f,row,rowIdx); if(!text) continue;
     const font=fonts.get(f._fkey);
     let size=f.sizePt*scale, w=font.widthOfTextAtSize(text,size);
@@ -847,6 +1006,7 @@ async function generateMerged(){
   if(state.layout.mode==="grid"){
     const g=gridGeom();
     if(!g.valid) throw new Error("Grid doesn't fit the sheet — reduce cols/rows or margins");
+    const images=await embedNeededImages(out, [...state.rows.keys()]);
     let page=null;
     for(let i=0;i<state.rows.length;i++){
       const pos=i%g.perSheet;
@@ -856,16 +1016,17 @@ async function generateMerged(){
       const yTop=g.M+r*(g.cellH+g.G)+(g.cellH-g.ph)/2;
       const y0=g.SH-yTop-g.ph;
       page.drawPage(emb,{x:x0,y:y0,width:g.pw,height:g.ph});
-      stampRow(page, state.rows[i], i, fonts, x0, y0, g.pw, g.ph, g.scale);
+      stampRow(page, state.rows[i], i, fonts, images, x0, y0, g.pw, g.ph, g.scale);
       if(state.layout.crop) drawCropMarks(page,x0,y0,g.pw,g.ph);
       if(i%8===0){ $("#progress").textContent=`building… ${i+1}/${state.rows.length}`; await new Promise(r2=>setTimeout(r2)); }
     }
   } else {
     const [OW,OH]=outSize();
+    const images=await embedNeededImages(out, [...state.rows.keys()]);
     for(let i=0;i<state.rows.length;i++){
       const page=out.addPage([OW,OH]);
       page.drawPage(emb,{x:0,y:0,width:OW,height:OH});
-      stampRow(page, state.rows[i], i, fonts, 0, 0, OW, OH, 1);
+      stampRow(page, state.rows[i], i, fonts, images, 0, 0, OW, OH, 1);
       if(i%8===0){ $("#progress").textContent=`building… ${i+1}/${state.rows.length}`; await new Promise(r=>setTimeout(r)); }
     }
   }
@@ -879,7 +1040,8 @@ async function buildSingleDoc(i, tpl){
   const [OW,OH]= state.layout.mode==="grid" ? [state.tpl.wpt,state.tpl.hpt] : outSize();
   const page=doc.addPage([OW,OH]);
   page.drawPage(emb,{x:0,y:0,width:OW,height:OH});
-  stampRow(page, state.rows[i], i, fonts, 0, 0, OW, OH, 1);
+  const images=await embedNeededImages(doc, [i]);
+  stampRow(page, state.rows[i], i, fonts, images, 0, 0, OW, OH, 1);
   return doc.save();
 }
 function rowFileBase(i){
@@ -947,6 +1109,8 @@ $("#saveProj").onclick=()=>{
     tpl: state.tpl.bytes?{name:state.tpl.name,b64:bytesToB64(state.tpl.bytes)}:null,
     fonts: state.fonts.filter(f=>f.kind==="custom").map(f=>({fileName:f.fileName||f.label+".ttf", b64:bytesToB64(f.bytes), oldId:f.id})),
     fields: state.fields.map(f=>({...f,_fkey:undefined})),
+    assets: Object.fromEntries(Object.entries(state.assets).map(([id,a])=>[id,{name:a.name,b64:bytesToB64(a.bytes)}])),
+    photoPool: [...state.photoPool],
     dataRaw: state.dataRaw, hasHeader: state.hasHeader,
     sizePreset: $("#sizePreset").value, cw:$("#cw").value, ch:$("#ch").value,
     layout: {...state.layout},
@@ -966,7 +1130,19 @@ $("#projInput").onchange=async()=>{
 async function loadProject(proj){
   state.fields=[]; state.selField=null;
   state.fonts=[...BUILTIN_FONTS];
+  state.assets={}; state.photoPool=[];
   const idMap={};
+  for(const [oldId, a] of Object.entries(proj.assets||{})){
+    const bytes=b64ToBytes(a.b64);
+    const url=URL.createObjectURL(new Blob([bytes]));
+    const dim=await new Promise(res=>{ const im=new Image();
+      im.onload=()=>res({w:im.naturalWidth,h:im.naturalHeight});
+      im.onerror=()=>res({w:1,h:1}); im.src=url; });
+    const nid="a"+(assetSeq++);
+    state.assets[nid]={name:a.name, bytes, url, w:dim.w, h:dim.h};
+    idMap["asset:"+oldId]=nid;
+  }
+  state.photoPool=(proj.photoPool||[]).map(oid=>idMap["asset:"+oid]).filter(Boolean);
   for(const f of (proj.fonts||[])){
     const ft=await addCustomFont(b64ToBytes(f.b64), f.fileName, false);
     if(ft && f.oldId) idMap[f.oldId]=ft.id;
@@ -987,6 +1163,8 @@ async function loadProject(proj){
   (proj.fields||[]).forEach(f=>{
     const nf={...f}; if(idMap[nf.fontId]) nf.fontId=idMap[nf.fontId];
     if(!state.fonts.find(x=>x.id===nf.fontId)) nf.fontId="helv";
+    if(nf.imgId) nf.imgId=idMap["asset:"+nf.imgId]||null;
+    if(!nf.type) nf.type="text";
     nf.id="f"+(fieldSeq++);
     state.fields.push(nf);
   });
